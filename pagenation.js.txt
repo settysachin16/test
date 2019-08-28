@@ -1,0 +1,186 @@
+import { LightningElement, track } from 'lwc';
+
+const columns = [
+    { label: 'Label', fieldName: 'name', sortable: true, actions: [
+        { label: 'Sort ASC', checked: false, name:'asc' },
+        { label: 'Sort DESC', checked: false, name:'desc' }
+    ]},
+    { label: 'Website', fieldName: 'website', type: 'url' },
+    { label: 'Phone', fieldName: 'phone', type: 'phone' },
+    { label: 'Balance', fieldName: 'amount', type: 'currency', sortable:true },
+    { label: 'CloseAt', fieldName: 'closeAt', type: 'date' },
+];
+
+const recordMetadata = {
+    name: 'name',
+    email: 'email',
+    website: 'url',
+    amount: 'currency',
+    phone: 'phoneNumber',
+    closeAt: 'dateInFuture',
+};
+
+export default class poc1 extends LightningElement {
+    
+    @track data = [];
+    @track columns = columns;
+    @track sortedBy;
+    @track sortedDirection = 'asc';
+    @track error;
+
+    @track alldata = [];
+    @track currentPageNumber = 1;
+    @track totalPages = 0;
+    @track pageSize = 5;
+    @track pageList = [];
+
+    async connectedCallback() {
+        const data = await this.fetchData({ amountOfRecords: 100 });
+        this.alldata = data;
+        this.totalPages = Math.ceil(this.alldata.length/this.pageSize);
+        this.buildData();
+    }
+
+    fetchData({ amountOfRecords }) {
+        return fetch('https://data-faker.herokuapp.com/collection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+            },
+            body: JSON.stringify({
+                amountOfRecords,
+                recordMetadata,
+            }),
+        }).then(response => response.json());
+    }
+
+    sortData(fieldName, sortDirection){
+        var data = JSON.parse(JSON.stringify(this.alldata));
+        var key =(a) => a[fieldName]; 
+        var reverse = sortDirection === 'asc' ? 1: -1;
+        data.sort((a,b) => {
+            let valueA = key(a) ? key(a).toLowerCase() : '';
+            let valueB = key(b) ? key(b).toLowerCase() : '';
+            return reverse * ((valueA > valueB) - (valueB > valueA));
+        });
+
+        this.alldata = data;
+        this.buildData();
+    }
+
+    updateColumnSorting(event){
+        this.sortedBy = event.detail.fieldName;
+        this.sortedDirection = event.detail.sortDirection;
+        this.sortData(this.sortedBy,this.sortedDirection);       
+    }
+
+    handleHeaderAction(event){
+        this.sortedBy = event.detail.columnDefinition.fieldName;
+        this.sortedDirection = event.detail.action.name;
+        this.sortData(this.sortedBy,this.sortedDirection);       
+    }
+
+    get getFirst() {
+        return (this.currentPageNumber === 1) ? 'selected' : '';
+    }
+
+    get getCurrent() {
+        return (this.currentPageNumber === 1) ? 'selected' : '';
+    }
+
+    get getTotal() {
+        return ((this.currentPageNumber === this.totalPages) ? 'selected' : '');
+    }
+
+    get disableLast() {
+        return (this.currentPageNumber === this.totalPages);
+    }
+
+    get disableFirst() {
+        return (this.currentPageNumber === 1);
+    }
+    
+    buildData() {
+        let data = [];
+        let pageNumber = this.currentPageNumber;
+        let pageSize = this.pageSize;
+        let allData = this.alldata;
+        let x = (pageNumber-1) * pageSize;
+        
+        for(; x<=(pageNumber)*pageSize; x++){
+            if(allData[x]){
+                data.push(allData[x]);
+            }
+        }
+        this.data = data;
+        
+        this.generatePageList(pageNumber);
+    }
+    
+    generatePageList(pageNumber){
+        pageNumber = parseInt(pageNumber,10);
+        let pageList = [];
+        let totalPages = this.totalPages;
+        if(totalPages > 1){
+            if(totalPages <= 10){
+                let counter = 2;
+                for(; counter < (totalPages); counter++){
+                    pageList.push(counter);
+                } 
+            } else{
+                if(pageNumber < 5){
+                    pageList.push(2, 3, 4, 5, 6);
+                } else{
+                    if(pageNumber>(totalPages-5)){
+                        pageList.push(totalPages-5, totalPages-4, totalPages-3, totalPages-2, totalPages-1);
+                    } else{
+                        pageList.push(pageNumber-2, pageNumber-1, pageNumber, pageNumber+1, pageNumber+2);
+                    }
+                }
+            }
+        }
+        this.pageList = pageList;
+    }
+
+    onNext() {        
+        let pageNumber = this.currentPageNumber;
+        this.currentPageNumber = pageNumber+1;
+        this.removeClassSelected();
+        this.buildData();
+    }
+    
+    onPrev() {        
+        let pageNumber = this.currentPageNumber;
+        this.currentPageNumber = pageNumber-1;
+        this.removeClassSelected();
+        this.buildData();
+    }
+
+    removeClassSelected() {
+        let els = this.template.querySelectorAll(".pagenum");
+        els.forEach((el) => el.classList.remove("selected"));
+        this.template.querySelector('[name="' + this.currentPageNumber + '"]').classList.add("selected");
+    }
+    
+    processMe(event) {
+        this.currentPageNumber = parseInt(event.target.name,10);
+        this.removeClassSelected();
+        this.buildData();
+    }
+    
+    onFirst() {        
+        this.currentPageNumber = 1;
+        this.removeClassSelected();
+        this.buildData();
+    }
+    
+    onLast() {        
+        this.currentPageNumber = this.totalPages;
+        this.removeClassSelected();
+        this.buildData();
+    }
+    
+}
+/*.selected {
+    color:orange;
+}*/

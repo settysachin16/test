@@ -1,0 +1,43 @@
+<template>
+    <div>
+            <lightning-datatable
+                    key-field="id"
+                    data={data}
+                    columns={columns}
+                    onsort={updateColumnSorting} 
+                    sorted-by={sortedBy} 
+                    sorted-direction={sortedDirection}
+                    onheaderaction={handleHeaderAction}>
+            </lightning-datatable>
+        </div> 
+        <div class="slds-m-top_medium slds-align_absolute-center">
+                <lightning-button label="First" icon-name="utility:left" icon-position="left"
+                onclick={onFirst} disabled={disableFirst}></lightning-button>
+<lightning-button label="prev" icon-name="utility:chevronleft" icon-position="left"
+                onclick={onPrev} disabled={disableFirst}></lightning-button>
+<span class="slds-p-horizontal_x-small">
+  <a onclick={processMe} name="1" 
+     class={getFirst}>1</a>
+</span>
+
+
+
+<template for:each={pageList} for:item='item'>
+  <span class="slds-p-horizontal_x-small" key={item}>
+      <a onclick={processMe} name={item}
+         class="pagenum">{item}</a>
+  </span>
+</template>
+
+
+<span class="slds-p-horizontal_x-small">
+  <a onclick={processMe} name={totalPages}
+     class={getTotal}>{totalPages}</a>
+</span>
+<lightning-button label="next" icon-name="utility:chevronright" icon-position="right" 
+                disabled={disableLast} onclick={onNext}></lightning-button>
+<lightning-button label="Last" icon-name="utility:right" icon-position="right" 
+                disabled={disableLast} onclick={onLast}></lightning-button>
+
+        </div>
+</template>
